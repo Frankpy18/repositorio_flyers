@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repositorio de Flyers</title>
+    <style>
+        :root { --primary: #d52b1e; --dark: #333; --light: #f4f4f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 0; color: var(--dark); }
+        header { background-color: var(--primary); color: white; padding: 20px; text-align: center; }
+        
+        .controls { max-width: 1000px; margin: 20px auto; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
+        #searchInput { flex: 1 1 300px; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .categories { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-cat { padding: 10px 15px; background-color: #ddd; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; text-transform: capitalize;}
+        .btn-cat.active, .btn-cat:hover { background-color: var(--primary); color: white; }
+        
+        .gallery { max-width: 1200px; margin: 0 auto 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .flyer-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.3s; display: flex; flex-direction: column; cursor: pointer; }
+        .flyer-card:hover { transform: translateY(-5px); }
+        .flyer-img { width: 100%; height: 300px; object-fit: cover; background-color: #eee; }
+        .flyer-info { padding: 15px; text-align: center; border-top: 1px solid #eee; }
+        .flyer-name { margin: 0 0 5px 0; font-size: 1.1em; text-transform: capitalize; }
+        .flyer-campaign { margin: 0; font-size: 0.85em; color: var(--primary); text-transform: uppercase; font-weight: bold; }
+        .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.2em; color: #777; padding: 40px; }
+
+        /* --- NUEVO DISEÑO DE MODAL DIVIDIDO --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); justify-content: center; align-items: center; }
+        .modal-container { display: flex; flex-direction: row; background: white; width: 90%; max-width: 1000px; height: 80vh; border-radius: 8px; overflow: hidden; animation: zoomIn 0.3s ease; }
+        
+        .modal-left { flex: 2; background: #222; display: flex; justify-content: center; align-items: center; padding: 10px; }
+        .modal-left img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .modal-right { flex: 1; padding: 30px; display: flex; flex-direction: column; background: var(--light); border-left: 1px solid #ddd; overflow-y: auto; }
+        .modal-right h2 { margin-top: 0; font-size: 1.4em; color: var(--dark); text-transform: capitalize; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        #txtDescription { flex-grow: 1; margin: 15px 0; font-size: 15px; line-height: 1.6; color: #444; white-space: pre-wrap; }
+        
+        .close-btn { position: absolute; top: 15px; right: 25px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
+        .close-btn:hover { color: var(--primary); }
+        
+        #btnCopiar { padding: 15px; background-color: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.3s; width: 100%; }
+        #btnCopiar:hover { background-color: #a82015; }
+        #btnCopiar:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            .modal-container { flex-direction: column; height: 90vh; }
+            .modal-left { flex: 1; height: 50%; }
+            .modal-right { flex: 1; height: 50%; border-left: none; border-top: 1px solid #ddd; }
+        }
+        @keyframes zoomIn { from {transform: scale(0.9); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Repositorio de Flyers</h1>
+    </header>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Buscar flyer por nombre...">
+        <div class="categories" id="categoryButtons"></div>
+    </div>
+
+    <main class="gallery" id="gallery"></main>
+
+    <!-- MODAL DIVIDIDO -->
+    <div id="imageModal" class="modal">
+        <span class="close-btn" id="closeModal">&times;</span>
+        <div class="modal-container">
+            <div class="modal-left">
+                <img id="modalImg">
+            </div>
+            <div class="modal-right">
+                <h2 id="caption"></h2>
+                <div id="txtDescription">Cargando texto...</div>
+                <button id="btnCopiar">Copiar texto 📋</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. AGREGA AQUÍ EL NOMBRE EXACTO DE TUS IMÁGENES (CON EXTENSIÓN)
+        // El script separará automáticamente la campaña usando el guion "-"
+        const listaArchivos = [
+            "flyer1-administrativo.png",
+            "flyer2-tecnico.jpeg",
+            "promo_verano_100mbps-full_claro.png",
+            "descuento_portabilidad-full_claro.jpg"
+        ];
+
+        let flyersData = [];
+        let campañasUnicas = new Set(["todas"]);
+        let currentTexto = "";
+
+        const gallery = document.getElementById('gallery');
+        const searchInput = document.getElementById('searchInput');
+        const categoryButtons = document.getElementById('categoryButtons');
+        
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const captionText = document.getElementById('caption');
+        const txtDescription = document.getElementById('txtDescription');
+        const btnCopiar = document.getElementById('btnCopiar');
+        const closeModal = document.getElementById('closeModal');
+
+        // Procesar la lista de archivos al inicio
+        function procesarArchivos() {
+            listaArchivos.forEach(archivo => {
+                let baseName = archivo.substring(0, archivo.lastIndexOf('.'));
+                let splitIndex = baseName.lastIndexOf('-');
+                
+                let nombre, campaña;
+                if (splitIndex !== -1) {
+                    nombre = baseName.substring(0, splitIndex).replace(/_/g, ' '); 
+                    campaña = baseName.substring(splitIndex + 1).toLowerCase();
+                } else {
+                    nombre = baseName.replace(/_/g, ' ');
+                    campaña = "general";
+                }
+
+                campañasUnicas.add(campaña);
+                
+                flyersData.push({
+                    file: archivo,
+                    displayName: nombre,
+                    campaign: campaña,
+                    txtPath: baseName + '.txt'
+                });
+            });
+
+            generarBotonesFiltro();
+            renderFlyers();
+        }
+
+        function generarBotonesFiltro() {
+            categoryButtons.innerHTML = '';
+            campañasUnicas.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = cat === 'todas' ? 'btn-cat active' : 'btn-cat';
+                btn.dataset.cat = cat;
+                btn.innerText = cat.replace(/-/g, ' ');
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderFlyers(e.target.dataset.cat, searchInput.value);
+                });
+                categoryButtons.appendChild(btn);
+            });
+        }
+
+        function renderFlyers(filterCat = 'todas', searchTerm = '') {
+            gallery.innerHTML = ''; 
+            const filteredFlyers = flyersData.filter(f => {
+                const matchCategory = filterCat === 'todas' || f.campaign === filterCat;
+                const matchSearch = f.displayName.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+
+            if (filteredFlyers.length === 0) {
+                gallery.innerHTML = '<div class="no-results">No se encontraron flyers.</div>';
+                return;
+            }
+
+            filteredFlyers.forEach(flyer => {
+                const card = document.createElement('div');
+                card.className = 'flyer-card';
+                card.innerHTML = `
+                    <img src="${flyer.file}" class="flyer-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23ddd\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23666\\'>Sin Imagen</text></svg>'">
+                    <div class="flyer-info">
+                        <h3 class="flyer-name">${flyer.displayName}</h3>
+                        <p class="flyer-campaign">${flyer.campaign.replace('-', ' ')}</p>
+                    </div>
+                `;
+                
+                // Evento al dar clic a la tarjeta entera
+                card.addEventListener('click', () => {
+                    abrirModal(flyer);
+                });
+                
+                gallery.appendChild(card);
+            });
+        }
+
+        function abrirModal(flyer) {
+            modal.style.display = "flex";
+            modalImg.src = flyer.file;
+            captionText.innerHTML = flyer.displayName;
+            txtDescription.innerText = "Cargando texto...";
+            btnCopiar.disabled = true;
+            currentTexto = "";
+
+            // Intenta extraer el texto del archivo .txt gemelo
+            fetch(`${flyer.txtPath}?v=${new Date().getTime()}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("No existe archivo txt");
+                    return response.text();
+                })
+                .then(texto => {
+                    currentTexto = texto;
+                    txtDescription.innerText = texto;
+                    btnCopiar.disabled = false;
+                    btnCopiar.innerText = "Copiar texto 📋";
+                })
+                .catch(() => {
+                    txtDescription.innerText = "No se ha encontrado un script de texto asignado para esta promoción. Por favor, revisa el archivo ." + flyer.txtPath.split('.').pop();
+                    btnCopiar.disabled = true;
+                    btnCopiar.innerText = "Sin texto disponible";
+                });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const currentCat = document.querySelector('.btn-cat.active').dataset.cat;
+            renderFlyers(currentCat, e.target.value);
+        });
+
+        btnCopiar.addEventListener('click', function() {
+            if (!currentTexto) return;
+            navigator.clipboard.writeText(currentTexto).then(() => {
+                this.innerText = "¡Texto Copiado! ✅"; 
+                setTimeout(() => this.innerText = "Copiar texto 📋", 2000);
+            });
+        });
+
+        closeModal.addEventListener('click', () => modal.style.display = "none");
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = "none";
+        });
+
+        // Iniciar
+        procesarArchivos();
+    </script>
+</body>
+</html>
