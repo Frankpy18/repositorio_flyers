@@ -73,7 +73,7 @@
         <p>Repositorio y Guías Semanales para Asesores</p>
     </header>
 
-    <div class="status-bar" id="statusBar">Cargando flyers automáticamente...</div>
+    <div class="status-bar" id="statusBar" style="display:none;"></div>
 
     <div class="upload-section" id="uploadSection" style="display:none;">
         <p style="margin-top:0;">No se pudo cargar la carpeta automáticamente. Haz clic abajo y selecciona la carpeta manualmente.</p>
@@ -124,7 +124,6 @@
         const uploadSection = document.getElementById('uploadSection');
         const statusBar = document.getElementById('statusBar');
         const folderInput = document.getElementById('folderInput');
-        const refreshBtn = document.getElementById('refreshBtn');
 
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('modalImg');
@@ -158,8 +157,8 @@
         }
 
         async function cargarFlyersAutomaticamente() {
+            statusBar.style.display = 'none';
             statusBar.classList.remove('error');
-            statusBar.textContent = 'Cargando flyers desde "' + ROOT_FOLDER + '"...';
             gallery.innerHTML = '';
 
             try {
@@ -218,9 +217,9 @@
 
                 uploadSection.style.display = "none";
                 controlsSection.style.display = "flex";
-                statusBar.textContent = flyersData.length + ' flyer(s) cargados automáticamente desde "' + ROOT_FOLDER + '".';
             } catch (err) {
                 console.error(err);
+                statusBar.style.display = 'block';
                 statusBar.classList.add('error');
                 statusBar.textContent = '⚠️ ' + err.message + ' — usa la carga manual mientras tanto.';
                 uploadSection.style.display = "block";
@@ -277,7 +276,7 @@
 
             uploadSection.style.display = "none";
             controlsSection.style.display = "flex";
-            statusBar.textContent = flyersData.length + ' flyer(s) cargados manualmente.';
+            statusBar.style.display = 'none';
             statusBar.classList.remove('error');
         });
 
@@ -360,8 +359,6 @@
             const currentWeek = document.querySelector('.btn-week.active').dataset.week;
             renderFlyers(currentWeek, e.target.value);
         });
-
-        refreshBtn.addEventListener('click', cargarFlyersAutomaticamente);
 
         closeModal.addEventListener('click', () => modal.style.display = "none");
         modal.addEventListener('click', (e) => {
