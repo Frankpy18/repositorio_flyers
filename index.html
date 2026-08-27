@@ -12,11 +12,17 @@
         header h1 { margin: 0; font-size: 1.8em; }
         header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.95em; }
 
+        .status-bar { text-align: center; padding: 10px 20px; font-size: 0.85em; color: #777; background: #fff; border-bottom: 1px solid #eee; }
+        .status-bar.error { color: var(--primary); font-weight: 600; }
+
         .upload-section { text-align: center; background: #fff; padding: 25px; border-bottom: 1px solid #ddd; }
         .upload-btn { background: var(--dark); color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
         .upload-btn:hover { background: #555; }
+        .refresh-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85em; font-weight: 600; }
+        .refresh-btn:hover { background: var(--primary); color: #fff; }
 
         .controls { max-width: 1100px; margin: 25px auto 10px auto; padding: 0 20px; display: none; flex-direction: column; gap: 15px; }
+        .controls-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
         
         #searchInput { width: 100%; box-sizing: border-box; padding: 12px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; outline: none; transition: border-color 0.3s; }
         #searchInput:focus { border-color: var(--primary); }
@@ -67,20 +73,23 @@
         <p>Repositorio y Guías Semanales para Asesores</p>
     </header>
 
-    <div class="upload-section" id="uploadSection">
-        <p style="margin-top:0;">Haz clic abajo y selecciona la carpeta donde guardas tus imágenes.</p>
+    <div class="status-bar" id="statusBar">Cargando flyers automáticamente...</div>
+
+    <div class="upload-section" id="uploadSection" style="display:none;">
+        <p style="margin-top:0;">No se pudo cargar la carpeta automáticamente. Haz clic abajo y selecciona la carpeta manualmente.</p>
         <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;" />
-        <button class="upload-btn" onclick="document.getElementById('folderInput').click()">📁 Cargar Carpeta de Flyers</button>
+        <button class="upload-btn" onclick="document.getElementById('folderInput').click()">📁 Cargar Carpeta de Flyers (manual)</button>
     </div>
 
     <div class="controls" id="controlsSection">
-        <input type="text" id="searchInput" placeholder="Buscar por tema o nombre del flyer...">
+        <div class="controls-top">
+            <input type="text" id="searchInput" placeholder="Buscar por tema o nombre del flyer..." style="flex:1;">
+            <button class="refresh-btn" id="refreshBtn">🔄 Recargar carpeta</button>
+        </div>
         <div class="weeks-tabs" id="weeksButtons"></div>
     </div>
 
-    <main class="gallery" id="gallery">
-        <div class="no-results">Por favor, carga tu carpeta de imágenes para comenzar.</div>
-    </main>
+    <main class="gallery" id="gallery"></main>
 
     <!-- MODAL -->
     <div id="imageModal" class="modal">
@@ -97,38 +106,136 @@
     </div>
 
     <script>
+        // =====================================================================
+        // CONFIGURACIÓN
+        // Los flyers están en la MISMA carpeta que este index.html (raíz del
+        // repo). El script lee la lista de archivos desde "manifest.json",
+        // un archivo de texto que tú mantienes junto a index.html.
+        // =====================================================================
+        const ROOT_FOLDER = './';
+        const MANIFEST_FILE = ROOT_FOLDER + 'manifest.json';
+
         let flyersData = [];
         let semanasUnicas = new Set(["todas"]);
 
-        const folderInput = document.getElementById('folderInput');
         const gallery = document.getElementById('gallery');
         const searchInput = document.getElementById('searchInput');
         const weeksButtons = document.getElementById('weeksButtons');
         const controlsSection = document.getElementById('controlsSection');
         const uploadSection = document.getElementById('uploadSection');
-        
+        const statusBar = document.getElementById('statusBar');
+        const folderInput = document.getElementById('folderInput');
+        const refreshBtn = document.getElementById('refreshBtn');
+
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('modalImg');
         const captionText = document.getElementById('caption');
         const txtDescription = document.getElementById('txtDescription');
         const closeModal = document.getElementById('closeModal');
 
+        // ---------------------------------------------------------------
+        // CARGA AUTOMÁTICA
+        // Lee la lista de archivos desde manifest.json. Si no existe o está
+        // mal formado, cae al botón de carga manual como respaldo.
+        // ---------------------------------------------------------------
+        async function obtenerListaArchivos() {
+            const r = await fetch(MANIFEST_FILE, { cache: 'no-store' });
+            if (!r.ok) {
+                throw new Error('No se encontró "' + MANIFEST_FILE + '" (HTTP ' + r.status + '). Sube ese archivo al repo, junto a index.html.');
+            }
+            const lista = await r.json();
+            if (!Array.isArray(lista) || lista.length === 0) {
+                throw new Error('"' + MANIFEST_FILE + '" existe pero está vacío o mal formado. Debe ser una lista como ["flyer1-semana1.jpeg", "flyer1-semana1.txt"].');
+            }
+            return lista;
+        }
+
+        async function cargarFlyersAutomaticamente() {
+            statusBar.classList.remove('error');
+            statusBar.textContent = 'Cargando flyers desde "' + ROOT_FOLDER + '"...';
+            gallery.innerHTML = '';
+
+            try {
+                const archivos = await obtenerListaArchivos();
+
+                const imagenes = archivos.filter(f => /\.(jpe?g|png|webp)$/i.test(f));
+                const textos = archivos.filter(f => f.toLowerCase().endsWith('.txt'));
+
+                if (imagenes.length === 0) {
+                    throw new Error('No se encontraron imágenes (.jpg, .png, .webp) en "' + ROOT_FOLDER + '".');
+                }
+
+                // Descargar el contenido de todos los .txt en paralelo
+                let textFiles = {};
+                await Promise.all(textos.map(async (t) => {
+                    try {
+                        const r = await fetch(ROOT_FOLDER + t, { cache: 'no-store' });
+                        textFiles[t] = r.ok ? await r.text() : '';
+                    } catch (e) {
+                        textFiles[t] = '';
+                    }
+                }));
+
+                flyersData = [];
+                semanasUnicas = new Set(["todas"]);
+
+                imagenes.forEach(imgName => {
+                    let baseName = imgName.substring(0, imgName.lastIndexOf('.'));
+                    let splitIndex = baseName.lastIndexOf('-');
+
+                    let nombre, semana;
+                    if (splitIndex !== -1) {
+                        nombre = baseName.substring(0, splitIndex).replace(/_/g, ' ');
+                        semana = baseName.substring(splitIndex + 1).toLowerCase();
+                    } else {
+                        nombre = baseName.replace(/_/g, ' ');
+                        semana = "semana 1";
+                    }
+
+                    semanasUnicas.add(semana);
+                    let txtName = baseName + '.txt';
+
+                    flyersData.push({
+                        originalFile: imgName,
+                        displayName: nombre,
+                        week: semana,
+                        url: ROOT_FOLDER + imgName,
+                        script: textFiles[txtName] || ""
+                    });
+                });
+
+                generarPestañasSemanas();
+                renderFlyers();
+
+                uploadSection.style.display = "none";
+                controlsSection.style.display = "flex";
+                statusBar.textContent = flyersData.length + ' flyer(s) cargados automáticamente desde "' + ROOT_FOLDER + '".';
+            } catch (err) {
+                console.error(err);
+                statusBar.classList.add('error');
+                statusBar.textContent = '⚠️ ' + err.message + ' — usa la carga manual mientras tanto.';
+                uploadSection.style.display = "block";
+                controlsSection.style.display = "none";
+                gallery.innerHTML = '<div class="no-results">Por favor, carga tu carpeta de imágenes manualmente para comenzar.</div>';
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // CARGA MANUAL (se mantiene como respaldo por si la automática falla)
+        // ---------------------------------------------------------------
         folderInput.addEventListener('change', async (e) => {
             const archivos = Array.from(e.target.files);
             flyersData = [];
             semanasUnicas = new Set(["todas"]);
             let textFiles = {};
 
-            // 1. Separar imágenes y textos
             const imagenes = archivos.filter(f => f.type.startsWith('image/') || f.name.match(/\.(jpeg|jpg|png)$/i));
             const textos = archivos.filter(f => f.name.endsWith('.txt'));
 
-            // 2. Extraer el contenido de todos los .txt localmente
             for (let t of textos) {
                 textFiles[t.name] = await t.text();
             }
 
-            // 3. Procesar nombres de las imágenes (formato: nombre-semana.ext)
             imagenes.forEach(img => {
                 let baseName = img.name.substring(0, img.name.lastIndexOf('.'));
                 let splitIndex = baseName.lastIndexOf('-');
@@ -156,10 +263,11 @@
 
             generarPestañasSemanas();
             renderFlyers();
-            
-            // Ocultar botón de carga y mostrar controles
+
             uploadSection.style.display = "none";
             controlsSection.style.display = "flex";
+            statusBar.textContent = flyersData.length + ' flyer(s) cargados manualmente.';
+            statusBar.classList.remove('error');
         });
 
         function generarPestañasSemanas() {
@@ -249,10 +357,15 @@
             renderFlyers(currentWeek, e.target.value);
         });
 
+        refreshBtn.addEventListener('click', cargarFlyersAutomaticamente);
+
         closeModal.addEventListener('click', () => modal.style.display = "none");
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = "none";
         });
+
+        // Arranca la carga automática apenas se abre la página
+        window.addEventListener('DOMContentLoaded', cargarFlyersAutomaticamente);
     </script>
 </body>
 </html>
