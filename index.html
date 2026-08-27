@@ -12,7 +12,11 @@
         header h1 { margin: 0; font-size: 1.8em; }
         header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.95em; }
 
-        .controls { max-width: 1100px; margin: 25px auto 10px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 15px; }
+        .upload-section { text-align: center; background: #fff; padding: 25px; border-bottom: 1px solid #ddd; }
+        .upload-btn { background: var(--dark); color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .upload-btn:hover { background: #555; }
+
+        .controls { max-width: 1100px; margin: 25px auto 10px auto; padding: 0 20px; display: none; flex-direction: column; gap: 15px; }
         
         #searchInput { width: 100%; box-sizing: border-box; padding: 12px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; outline: none; transition: border-color 0.3s; }
         #searchInput:focus { border-color: var(--primary); }
@@ -33,10 +37,10 @@
         .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.1em; color: #777; padding: 40px; }
 
         /* MODAL */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; }
-        .modal-container { display: flex; flex-direction: row; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 95%; max-width: 1250px; height: 85vh; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: zoomIn 0.3s ease; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; }
+        .modal-container { display: flex; flex-direction: row; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 95%; max-width: 1250px; height: 85vh; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: zoomIn 0.3s ease; }
         
-        .modal-left { flex: 1.4; background: rgba(0, 0, 0, 0.04); display: flex; justify-content: center; align-items: center; padding: 15px; }
+        .modal-left { flex: 1.4; background: rgba(0, 0, 0, 0.05); display: flex; justify-content: center; align-items: center; padding: 15px; }
         .modal-left img { max-width: 100%; max-height: 100%; object-fit: contain; }
         
         .modal-right { flex: 1.1; padding: 35px; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e5e5e5; overflow-y: auto; }
@@ -63,12 +67,20 @@
         <p>Repositorio y Guías Semanales para Asesores</p>
     </header>
 
-    <div class="controls">
+    <div class="upload-section" id="uploadSection">
+        <p style="margin-top:0;">Haz clic abajo y selecciona la carpeta donde guardas tus imágenes.</p>
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;" />
+        <button class="upload-btn" onclick="document.getElementById('folderInput').click()">📁 Cargar Carpeta de Flyers</button>
+    </div>
+
+    <div class="controls" id="controlsSection">
         <input type="text" id="searchInput" placeholder="Buscar por tema o nombre del flyer...">
         <div class="weeks-tabs" id="weeksButtons"></div>
     </div>
 
-    <main class="gallery" id="gallery"></main>
+    <main class="gallery" id="gallery">
+        <div class="no-results">Por favor, carga tu carpeta de imágenes para comenzar.</div>
+    </main>
 
     <!-- MODAL -->
     <div id="imageModal" class="modal">
@@ -85,20 +97,15 @@
     </div>
 
     <script>
-        // LISTA DE ARCHIVOS CON FORMATO: nombre-semana.extension
-        const listaArchivos = [
-            "flyer1-semana1.png",
-            "flyer2-semana2.png",
-            "flyer3-semana3.jpg",
-            "flyer4-semana4.png"
-        ];
-
         let flyersData = [];
         let semanasUnicas = new Set(["todas"]);
 
+        const folderInput = document.getElementById('folderInput');
         const gallery = document.getElementById('gallery');
         const searchInput = document.getElementById('searchInput');
         const weeksButtons = document.getElementById('weeksButtons');
+        const controlsSection = document.getElementById('controlsSection');
+        const uploadSection = document.getElementById('uploadSection');
         
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('modalImg');
@@ -106,13 +113,27 @@
         const txtDescription = document.getElementById('txtDescription');
         const closeModal = document.getElementById('closeModal');
 
-        function procesarArchivos() {
-            listaArchivos.forEach(archivo => {
-                let baseName = archivo.substring(0, archivo.lastIndexOf('.'));
+        folderInput.addEventListener('change', async (e) => {
+            const archivos = Array.from(e.target.files);
+            flyersData = [];
+            semanasUnicas = new Set(["todas"]);
+            let textFiles = {};
+
+            // 1. Separar imágenes y textos
+            const imagenes = archivos.filter(f => f.type.startsWith('image/') || f.name.match(/\.(jpeg|jpg|png)$/i));
+            const textos = archivos.filter(f => f.name.endsWith('.txt'));
+
+            // 2. Extraer el contenido de todos los .txt localmente
+            for (let t of textos) {
+                textFiles[t.name] = await t.text();
+            }
+
+            // 3. Procesar nombres de las imágenes (formato: nombre-semana.ext)
+            imagenes.forEach(img => {
+                let baseName = img.name.substring(0, img.name.lastIndexOf('.'));
                 let splitIndex = baseName.lastIndexOf('-');
                 
                 let nombre, semana;
-                
                 if (splitIndex !== -1) {
                     nombre = baseName.substring(0, splitIndex).replace(/_/g, ' ');
                     semana = baseName.substring(splitIndex + 1).toLowerCase();
@@ -122,18 +143,24 @@
                 }
 
                 semanasUnicas.add(semana);
-                
+                let txtName = baseName + '.txt';
+
                 flyersData.push({
-                    file: archivo,
+                    originalFile: img.name,
                     displayName: nombre,
                     week: semana,
-                    txtPath: baseName + '.txt'
+                    url: URL.createObjectURL(img),
+                    script: textFiles[txtName] || ""
                 });
             });
 
             generarPestañasSemanas();
             renderFlyers();
-        }
+            
+            // Ocultar botón de carga y mostrar controles
+            uploadSection.style.display = "none";
+            controlsSection.style.display = "flex";
+        });
 
         function generarPestañasSemanas() {
             weeksButtons.innerHTML = '';
@@ -168,7 +195,7 @@
             });
 
             if (filteredFlyers.length === 0) {
-                gallery.innerHTML = '<div class="no-results">No se encontraron flyers para esta semana.</div>';
+                gallery.innerHTML = '<div class="no-results">No se encontraron flyers para esta búsqueda.</div>';
                 return;
             }
 
@@ -176,7 +203,7 @@
                 const card = document.createElement('div');
                 card.className = 'flyer-card';
                 card.innerHTML = `
-                    <img src="${flyer.file}" class="flyer-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23ddd\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23666\\'>Sin Imagen</text></svg>'">
+                    <img src="${flyer.url}" class="flyer-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23ddd\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23666\\'>Sin Imagen</text></svg>'">
                     <div class="flyer-info">
                         <h3 class="flyer-name">${flyer.displayName}</h3>
                         <span class="tag-week">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
@@ -190,37 +217,31 @@
 
         function abrirModal(flyer) {
             modal.style.display = "flex";
-            modalImg.src = flyer.file;
-            captionText.innerHTML = "Cargando...";
+            modalImg.src = flyer.url;
+            captionText.innerHTML = "";
             txtDescription.innerText = "";
 
-            fetch(`${flyer.txtPath}?v=${new Date().getTime()}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("No existe archivo txt");
-                    return response.text();
-                })
-                .then(texto => {
-                    const lineas = texto.trim().split('\n');
-                    const tituloPersonalizado = lineas[0].trim();
-                    const cuerpoTexto = lineas.slice(1).join('\n').trim();
+            if (flyer.script.trim() !== "") {
+                const lineas = flyer.script.trim().split('\n');
+                const tituloPersonalizado = lineas[0].trim();
+                const cuerpoTexto = lineas.slice(1).join('\n').trim();
 
-                    captionText.innerHTML = `
-                        <div>
-                            <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
-                        </div>
-                        ${tituloPersonalizado}
-                    `;
-                    txtDescription.innerText = cuerpoTexto;
-                })
-                .catch(() => {
-                    captionText.innerHTML = `
-                        <div>
-                            <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
-                        </div>
-                        ${flyer.displayName}
-                    `;
-                    txtDescription.innerText = "No se ha encontrado texto descriptivo.";
-                });
+                captionText.innerHTML = `
+                    <div>
+                        <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                    </div>
+                    ${tituloPersonalizado}
+                `;
+                txtDescription.innerText = cuerpoTexto;
+            } else {
+                captionText.innerHTML = `
+                    <div>
+                        <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                    </div>
+                    ${flyer.displayName}
+                `;
+                txtDescription.innerText = "No se ha encontrado texto descriptivo para este flyer.";
+            }
         }
 
         searchInput.addEventListener('input', (e) => {
@@ -232,8 +253,6 @@
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = "none";
         });
-
-        procesarArchivos();
     </script>
 </body>
 </html>
