@@ -133,6 +133,14 @@
         const txtDescription = document.getElementById('txtDescription');
         const closeModal = document.getElementById('closeModal');
 
+        // Toma la primera línea no vacía del .txt como título. Si no hay
+        // texto, usa el nombre derivado del archivo como respaldo.
+        function extraerTitulo(textoScript, nombreRespaldo) {
+            if (!textoScript || !textoScript.trim()) return nombreRespaldo;
+            const primeraLinea = textoScript.trim().split('\n')[0].trim();
+            return primeraLinea || nombreRespaldo;
+        }
+
         // ---------------------------------------------------------------
         // CARGA AUTOMÁTICA
         // Lee la lista de archivos desde manifest.json. Si no existe o está
@@ -194,13 +202,15 @@
 
                     semanasUnicas.add(semana);
                     let txtName = baseName + '.txt';
+                    let scriptTexto = textFiles[txtName] || "";
 
                     flyersData.push({
                         originalFile: imgName,
                         displayName: nombre,
+                        title: extraerTitulo(scriptTexto, nombre),
                         week: semana,
                         url: ROOT_FOLDER + imgName,
-                        script: textFiles[txtName] || ""
+                        script: scriptTexto
                     });
                 });
 
@@ -251,13 +261,15 @@
 
                 semanasUnicas.add(semana);
                 let txtName = baseName + '.txt';
+                let scriptTexto = textFiles[txtName] || "";
 
                 flyersData.push({
                     originalFile: img.name,
                     displayName: nombre,
+                    title: extraerTitulo(scriptTexto, nombre),
                     week: semana,
                     url: URL.createObjectURL(img),
-                    script: textFiles[txtName] || ""
+                    script: scriptTexto
                 });
             });
 
@@ -298,7 +310,8 @@
             gallery.innerHTML = ''; 
             const filteredFlyers = flyersData.filter(f => {
                 const matchWeek = filterWeek === 'todas' || f.week === filterWeek;
-                const matchSearch = f.displayName.toLowerCase().includes(searchTerm.toLowerCase());
+                const term = searchTerm.toLowerCase();
+                const matchSearch = f.title.toLowerCase().includes(term) || f.displayName.toLowerCase().includes(term);
                 return matchWeek && matchSearch;
             });
 
@@ -313,7 +326,7 @@
                 card.innerHTML = `
                     <img src="${flyer.url}" class="flyer-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23ddd\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23666\\'>Sin Imagen</text></svg>'">
                     <div class="flyer-info">
-                        <h3 class="flyer-name">${flyer.displayName}</h3>
+                        <h3 class="flyer-name">${flyer.title}</h3>
                         <span class="tag-week">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
                     </div>
                 `;
@@ -329,25 +342,17 @@
             captionText.innerHTML = "";
             txtDescription.innerText = "";
 
-            if (flyer.script.trim() !== "") {
-                const lineas = flyer.script.trim().split('\n');
-                const tituloPersonalizado = lineas[0].trim();
-                const cuerpoTexto = lineas.slice(1).join('\n').trim();
+            captionText.innerHTML = `
+                <div>
+                    <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                </div>
+                ${flyer.title}
+            `;
 
-                captionText.innerHTML = `
-                    <div>
-                        <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
-                    </div>
-                    ${tituloPersonalizado}
-                `;
-                txtDescription.innerText = cuerpoTexto;
+            if (flyer.script.trim() !== "") {
+                const cuerpoTexto = flyer.script.trim().split('\n').slice(1).join('\n').trim();
+                txtDescription.innerText = cuerpoTexto || "No se ha encontrado texto descriptivo para este flyer.";
             } else {
-                captionText.innerHTML = `
-                    <div>
-                        <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
-                    </div>
-                    ${flyer.displayName}
-                `;
                 txtDescription.innerText = "No se ha encontrado texto descriptivo para este flyer.";
             }
         }
