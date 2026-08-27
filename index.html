@@ -175,21 +175,34 @@
         function abrirModal(flyer) {
             modal.style.display = "flex";
             modalImg.src = flyer.file;
-            captionText.innerHTML = flyer.displayName;
-            txtDescription.innerText = "Cargando texto...";
-
+            captionText.innerHTML = "";
+            txtDescription.innerText = "Cargando información...";
+        
             fetch(`${flyer.txtPath}?v=${new Date().getTime()}`)
                 .then(response => {
                     if (!response.ok) throw new Error("No existe archivo txt");
                     return response.text();
                 })
                 .then(texto => {
-                    txtDescription.innerText = texto;
+                    // Divide el contenido por saltos de línea
+                    const lineas = texto.trim().split('\n');
+                    
+                    // La primera línea se convierte en el título formal
+                    const tituloPersonalizado = lineas[0];
+                    
+                    // El resto de líneas componen la descripción/reseña
+                    const cuerpoTexto = lineas.slice(1).join('\n').trim();
+        
+                    captionText.innerHTML = `
+                        <span style="display:inline-block; font-size: 0.55em; text-transform: uppercase; letter-spacing: 1px; background: #ffebeb; color: var(--primary); padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;">${flyer.campaign.replace('-', ' ')}</span><br>
+                        ${tituloPersonalizado}
+                    `;
+                    txtDescription.innerText = cuerpoTexto;
                 })
                 .catch(() => {
-                    txtDescription.innerText = "No se ha encontrado texto descriptivo para esta promoción. Por favor, revisa el archivo ." + flyer.txtPath.split('.').pop();
-                });
-        }
+                    captionText.innerText = flyer.displayName;
+                    txtDescription.innerText = "No se ha encontrado texto descriptivo para este recurso.";
+        });
 
         searchInput.addEventListener('input', (e) => {
             const currentCat = document.querySelector('.btn-cat.active').dataset.cat;
