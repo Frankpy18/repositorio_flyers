@@ -3,100 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repositorio de Flyers</title>
+    <title>Repositorio Cross Selling</title>
     <style>
         :root { --primary: #d52b1e; --dark: #333; --light: #f4f4f9; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 0; color: var(--dark); }
-        header { background-color: var(--primary); color: white; padding: 20px; text-align: center; }
         
-        .controls { max-width: 1000px; margin: 20px auto; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
-        #searchInput { flex: 1 1 300px; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        .categories { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn-cat { padding: 10px 15px; background-color: #ddd; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; text-transform: capitalize;}
-        .btn-cat.active, .btn-cat:hover { background-color: var(--primary); color: white; }
-        
-        .gallery { max-width: 1200px; margin: 0 auto 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .flyer-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.3s; display: flex; flex-direction: column; cursor: pointer; }
-        .flyer-card:hover { transform: translateY(-5px); }
-        .flyer-img { width: 100%; height: 300px; object-fit: cover; background-color: #eee; }
-        .flyer-info { padding: 15px; text-align: center; border-top: 1px solid #eee; }
-        .flyer-name { margin: 0 0 5px 0; font-size: 1.1em; text-transform: capitalize; }
-        .flyer-campaign { margin: 0; font-size: 0.85em; color: var(--primary); text-transform: uppercase; font-weight: bold; }
-        .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.2em; color: #777; padding: 40px; }
+        header { background-color: var(--primary); color: white; padding: 25px 20px; text-align: center; }
+        header h1 { margin: 0; font-size: 1.8em; }
+        header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.95em; }
 
-        /* MODAL */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 1000; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            justify-content: center; 
-            align-items: center; 
-        }
-        .modal-container { 
-            display: flex; 
-            flex-direction: row; 
-            background: rgba(255, 255, 255, 0.85); /* Contenedor semitransparente */
-            backdrop-filter: blur(12px);            /* Desenfoque */
-            -webkit-backdrop-filter: blur(12px);
-            width: 95%; 
-            max-width: 1250px; 
-            height: 85vh; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            animation: zoomIn 0.3s ease; 
-        }
+        .controls { max-width: 1100px; margin: 25px auto 10px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        .modal-left { 
-            flex: 1.4; 
-            background: rgba(0, 0, 0, 0.05);       /* Se elimina el #222 oscuro y queda transparente */
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 15px; 
-        }
+        #searchInput { width: 100%; box-sizing: border-box; padding: 12px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; outline: none; transition: border-color 0.3s; }
+        #searchInput:focus { border-color: var(--primary); }
+
+        .weeks-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn-week { padding: 10px 18px; background-color: #e0e0e0; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; text-transform: capitalize; color: #555; }
+        .btn-week.active, .btn-week:hover { background-color: var(--primary); color: white; box-shadow: 0 2px 5px rgba(213, 43, 30, 0.3); }
+
+        .gallery { max-width: 1200px; margin: 20px auto 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .flyer-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; cursor: pointer; }
+        .flyer-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.12); }
+        .flyer-img { width: 100%; height: 280px; object-fit: cover; background-color: #eee; }
+        
+        .flyer-info { padding: 15px; text-align: center; border-top: 1px solid #eee; }
+        .flyer-name { margin: 0 0 6px 0; font-size: 1.05em; text-transform: capitalize; }
+        .flyer-tags { display: flex; justify-content: center; gap: 6px; }
+        .tag-category { font-size: 0.75em; color: var(--primary); text-transform: uppercase; font-weight: bold; background: #ffebeb; padding: 2px 6px; border-radius: 3px; }
+        .tag-week { font-size: 0.75em; color: #555; text-transform: capitalize; font-weight: 600; background: #eee; padding: 2px 6px; border-radius: 3px; }
+
+        .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.1em; color: #777; padding: 40px; }
+
+        /* MODAL CON EFECTO BORROSO TRANSPARENTE */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; }
+        .modal-container { display: flex; flex-direction: row; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); width: 95%; max-width: 1250px; height: 85vh; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: zoomIn 0.3s ease; }
+        
+        .modal-left { flex: 1.4; background: rgba(0, 0, 0, 0.04); display: flex; justify-content: center; align-items: center; padding: 15px; }
         .modal-left img { max-width: 100%; max-height: 100%; object-fit: contain; }
         
-        .modal-right { 
-            flex: 1.1; 
-            padding: 30px; 
-            display: flex; 
-            flex-direction: column; 
-            background: #ffffff;                    /* Fondo blanco limpio para la lectura */
-            border-left: 1px solid #ddd; 
-            overflow-y: auto; 
-        }
+        .modal-right { flex: 1.1; padding: 35px; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e5e5e5; overflow-y: auto; }
         .modal-right h2 { margin-top: 0; font-size: 1.4em; color: var(--dark); border-bottom: 2px solid var(--primary); padding-bottom: 10px; line-height: 1.3; }
         #txtDescription { flex-grow: 1; margin: 15px 0; font-size: 15px; line-height: 1.6; color: #444; white-space: pre-wrap; }
         
         .badge-campaña { display: inline-block; font-size: 0.55em; text-transform: uppercase; letter-spacing: 1px; background: #ffebeb; color: var(--primary); padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; }
+        .badge-semana { display: inline-block; font-size: 0.55em; text-transform: capitalize; letter-spacing: 0.5px; background: #eee; color: #444; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; margin-left: 5px; }
         
         .close-btn { position: absolute; top: 15px; right: 25px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 1001; }
         .close-btn:hover { color: var(--primary); }
 
         @media (max-width: 768px) {
             .modal-container { flex-direction: column; height: 90vh; }
-            .modal-left { flex: 1; height: 50%; }
-            .modal-right { flex: 1; height: 50%; border-left: none; border-top: 1px solid #ddd; }
+            .modal-left { flex: 1; height: 45%; }
+            .modal-right { flex: 1; height: 55%; border-left: none; border-top: 1px solid #ddd; padding: 20px; }
         }
-        @keyframes zoomIn { from {transform: scale(0.9); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        @keyframes zoomIn { from {transform: scale(0.95); opacity: 0;} to {transform: scale(1); opacity: 1;} }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Repositorio de Procesos</h1>
+        <h1>Campaña Cross Selling</h1>
+        <p>Repositorio y Guías Semanales para Asesores</p>
     </header>
 
     <div class="controls">
-        <input type="text" id="searchInput" placeholder="Buscar flyer por nombre...">
-        <div class="categories" id="categoryButtons"></div>
+        <input type="text" id="searchInput" placeholder="Buscar por tema o nombre del flyer...">
+        <div class="weeks-tabs" id="weeksButtons"></div>
     </div>
 
     <main class="gallery" id="gallery"></main>
@@ -116,21 +88,20 @@
     </div>
 
     <script>
+        // LISTA DE ARCHIVOS CON ESTRUCTURA: nombre-categoria-semana.extension
         const listaArchivos = [
-            "flyer1-administrativo.png",
-            "flyer2-administrativo.jpeg",
-            "flyer3-administrativo.jpeg",
-            "medidas_seguridad_postes-tecnico.jpg",
-            "promo_verano_100mbps-full_claro.png",
-            "descuento_portabilidad-full_claro.jpg"
+            "flyer1-administrativo-semana1.png",
+            "flyer2-administrativo-semana2.png",
+            "flyer3-administrativo-semana3.png",
+            "flyer4-administrativo-semana4.png"
         ];
 
         let flyersData = [];
-        let campañasUnicas = new Set(["todas"]);
+        let semanasUnicas = new Set(["todas"]);
 
         const gallery = document.getElementById('gallery');
         const searchInput = document.getElementById('searchInput');
-        const categoryButtons = document.getElementById('categoryButtons');
+        const weeksButtons = document.getElementById('weeksButtons');
         
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('modalImg');
@@ -138,60 +109,82 @@
         const txtDescription = document.getElementById('txtDescription');
         const closeModal = document.getElementById('closeModal');
 
+        // Función para procesar y desglosar el nombre del archivo
         function procesarArchivos() {
             listaArchivos.forEach(archivo => {
                 let baseName = archivo.substring(0, archivo.lastIndexOf('.'));
-                let splitIndex = baseName.lastIndexOf('-');
+                let partes = baseName.split('-');
                 
-                let nombre, campaña;
-                if (splitIndex !== -1) {
-                    nombre = baseName.substring(0, splitIndex).replace(/_/g, ' '); 
-                    campaña = baseName.substring(splitIndex + 1).toLowerCase();
+                let nombre, categoria, semana;
+                
+                if (partes.length >= 3) {
+                    nombre = partes.slice(0, partes.length - 2).join(' ').replace(/_/g, ' ');
+                    categoria = partes[partes.length - 2];
+                    semana = partes[partes.length - 1].toLowerCase();
+                } else if (partes.length === 2) {
+                    nombre = partes[0].replace(/_/g, ' ');
+                    categoria = "general";
+                    semana = partes[1].toLowerCase();
                 } else {
                     nombre = baseName.replace(/_/g, ' ');
-                    campaña = "general";
+                    categoria = "general";
+                    semana = "semana 1";
                 }
 
-                campañasUnicas.add(campaña);
+                semanasUnicas.add(semana);
                 
                 flyersData.push({
                     file: archivo,
                     displayName: nombre,
-                    campaign: campaña,
+                    category: categoria,
+                    week: semana,
                     txtPath: baseName + '.txt'
                 });
             });
 
-            generarBotonesFiltro();
+            generarPestañasSemanas();
             renderFlyers();
         }
 
-        function generarBotonesFiltro() {
-            categoryButtons.innerHTML = '';
-            campañasUnicas.forEach(cat => {
+        // Generación de botones para las pestañas de semanas
+        function generarPestañasSemanas() {
+            weeksButtons.innerHTML = '';
+            
+            // Ordenar las semanas (Semana 1, Semana 2, etc.)
+            const listaOrdenada = Array.from(semanasUnicas).sort((a, b) => {
+                if (a === 'todas') return -1;
+                if (b === 'todas') return 1;
+                return a.localeCompare(b, undefined, { numeric: true });
+            });
+
+            listaOrdenada.forEach(sem => {
                 const btn = document.createElement('button');
-                btn.className = cat === 'todas' ? 'btn-cat active' : 'btn-cat';
-                btn.dataset.cat = cat;
-                btn.innerText = cat.replace(/-/g, ' ');
+                btn.className = sem === 'todas' ? 'btn-week active' : 'btn-week';
+                btn.dataset.week = sem;
+                
+                // Formatear texto (ej. semana1 -> Semana 1)
+                btn.innerText = sem === 'todas' ? 'Todas las Semanas' : sem.replace(/(\D+)(\d+)/, '$1 $2');
+                
                 btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.btn-week').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
-                    renderFlyers(e.target.dataset.cat, searchInput.value);
+                    renderFlyers(e.target.dataset.week, searchInput.value);
                 });
-                categoryButtons.appendChild(btn);
+                weeksButtons.appendChild(btn);
             });
         }
 
-        function renderFlyers(filterCat = 'todas', searchTerm = '') {
+        function renderFlyers(filterWeek = 'todas', searchTerm = '') {
             gallery.innerHTML = ''; 
             const filteredFlyers = flyersData.filter(f => {
-                const matchCategory = filterCat === 'todas' || f.campaign === filterCat;
-                const matchSearch = f.displayName.toLowerCase().includes(searchTerm.toLowerCase());
-                return matchCategory && matchSearch;
+                const matchWeek = filterWeek === 'todas' || f.week === filterWeek;
+                const matchSearch = f.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                    f.category.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchWeek && matchSearch;
             });
 
             if (filteredFlyers.length === 0) {
-                gallery.innerHTML = '<div class="no-results">No se encontraron flyers.</div>';
+                gallery.innerHTML = '<div class="no-results">No se encontraron flyers para esta semana.</div>';
                 return;
             }
 
@@ -202,7 +195,10 @@
                     <img src="${flyer.file}" class="flyer-img" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%23ddd\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23666\\'>Sin Imagen</text></svg>'">
                     <div class="flyer-info">
                         <h3 class="flyer-name">${flyer.displayName}</h3>
-                        <p class="flyer-campaign">${flyer.campaign.replace('-', ' ')}</p>
+                        <div class="flyer-tags">
+                            <span class="tag-category">${flyer.category}</span>
+                            <span class="tag-week">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                        </div>
                     </div>
                 `;
                 
@@ -223,24 +219,25 @@
                     return response.text();
                 })
                 .then(texto => {
-                    // Divide el archivo .txt en líneas
                     const lineas = texto.trim().split('\n');
-                    
-                    // La 1ra línea se toma como título
                     const tituloPersonalizado = lineas[0].trim();
-                    
-                    // A partir de la 2da línea se toma como la descripción
                     const cuerpoTexto = lineas.slice(1).join('\n').trim();
 
                     captionText.innerHTML = `
-                        <span class="badge-campaña">${flyer.campaign.replace('-', ' ')}</span><br>
+                        <div>
+                            <span class="badge-campaña">${flyer.category}</span>
+                            <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                        </div>
                         ${tituloPersonalizado}
                     `;
                     txtDescription.innerText = cuerpoTexto;
                 })
                 .catch(() => {
                     captionText.innerHTML = `
-                        <span class="badge-campaña">${flyer.campaign.replace('-', ' ')}</span><br>
+                        <div>
+                            <span class="badge-campaña">${flyer.category}</span>
+                            <span class="badge-semana">${flyer.week.replace(/(\D+)(\d+)/, '$1 $2')}</span>
+                        </div>
                         ${flyer.displayName}
                     `;
                     txtDescription.innerText = "No se ha encontrado texto descriptivo.";
@@ -248,8 +245,8 @@
         }
 
         searchInput.addEventListener('input', (e) => {
-            const currentCat = document.querySelector('.btn-cat.active').dataset.cat;
-            renderFlyers(currentCat, e.target.value);
+            const currentWeek = document.querySelector('.btn-week.active').dataset.week;
+            renderFlyers(currentWeek, e.target.value);
         });
 
         closeModal.addEventListener('click', () => modal.style.display = "none");
