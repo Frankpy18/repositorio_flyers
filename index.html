@@ -218,6 +218,7 @@
 
                 uploadSection.style.display = "none";
                 controlsSection.style.display = "flex";
+                statusBar.textContent = flyersData.length + ' flyer(s) cargados automáticamente desde "' + ROOT_FOLDER + '".';
             } catch (err) {
                 console.error(err);
                 statusBar.classList.add('error');
