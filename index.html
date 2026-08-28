@@ -19,17 +19,16 @@
         .upload-btn { background: var(--dark); color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
         .upload-btn:hover { background: #555; }
 
-        .controls { max-width: 1100px; margin: 25px auto 10px auto; padding: 0 20px; display: none; flex-direction: column; gap: 15px; }
-        .controls-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        /* NUEVO LAYOUT PRINCIPAL */
+        .layout-container { max-width: 1300px; margin: 25px auto; padding: 0 20px; display: none; gap: 30px; align-items: flex-start; }
+        
+        /* Columna Izquierda (Buscador y Galería) */
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
         
         #searchInput { width: 100%; box-sizing: border-box; padding: 12px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; outline: none; transition: border-color 0.3s; }
         #searchInput:focus { border-color: var(--primary); }
 
-        .months-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .btn-month { padding: 10px 18px; background-color: #e0e0e0; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; text-transform: uppercase; color: #555; }
-        .btn-month.active, .btn-month:hover { background-color: var(--primary); color: white; box-shadow: 0 2px 5px rgba(213, 43, 30, 0.3); }
-
-        .gallery { max-width: 1200px; margin: 20px auto 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         .flyer-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.06); transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; cursor: pointer; }
         .flyer-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.12); }
         .flyer-img { width: 100%; height: 280px; object-fit: cover; background-color: #eee; }
@@ -39,6 +38,21 @@
         .tag-month { display: inline-block; font-size: 0.75em; color: var(--primary); text-transform: uppercase; font-weight: bold; background: #ffebeb; padding: 3px 8px; border-radius: 4px; }
 
         .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.1em; color: #777; padding: 40px; }
+
+        /* Columna Derecha (Barra Vertical de Meses) */
+        .sidebar { width: 220px; position: sticky; top: 25px; flex-shrink: 0; }
+        .months-tabs { display: flex; flex-direction: column; gap: 10px; }
+        .btn-month { padding: 12px 18px; background-color: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; text-transform: uppercase; color: #555; width: 100%; text-align: left; }
+        .btn-month.active, .btn-month:hover { background-color: var(--primary); color: white; box-shadow: 0 2px 5px rgba(213, 43, 30, 0.3); padding-left: 25px; }
+
+        /* Responsividad para móviles (vuelve a ser horizontal en pantallas pequeñas) */
+        @media (max-width: 850px) {
+            .layout-container { flex-direction: column; }
+            .sidebar { width: 100%; position: static; }
+            .months-tabs { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+            .btn-month { width: auto; text-align: center; border-radius: 20px; }
+            .btn-month.active, .btn-month:hover { padding-left: 18px; }
+        }
 
         /* MODAL */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; }
@@ -79,14 +93,20 @@
         <button class="upload-btn" onclick="document.getElementById('folderInput').click()">📁 Cargar Carpeta Principal (manual)</button>
     </div>
 
-    <div class="controls" id="controlsSection">
-        <div class="controls-top">
-            <input type="text" id="searchInput" placeholder="Buscar por tema, nombre o en el contenido del flyer..." style="flex:1;">
+    <div class="layout-container" id="controlsSection">
+        
+        <!-- Columna Izquierda: Buscador y Galería -->
+        <div class="main-content">
+            <input type="text" id="searchInput" placeholder="Buscar por tema, nombre o en el contenido del flyer...">
+            <main class="gallery" id="gallery"></main>
         </div>
-        <div class="months-tabs" id="monthsButtons"></div>
-    </div>
 
-    <main class="gallery" id="gallery"></main>
+        <!-- Columna Derecha: Menú de Meses -->
+        <aside class="sidebar">
+            <div class="months-tabs" id="monthsButtons"></div>
+        </aside>
+        
+    </div>
 
     <!-- MODAL -->
     <div id="imageModal" class="modal">
@@ -164,14 +184,13 @@
                 mesesUnicos = new Set(["todos"]);
 
                 imagenes.forEach(imgName => {
-                    // Extraer mes a partir de la carpeta (Ej. AGOSTO/flyer1.jpeg -> AGOSTO)
                     let pathParts = imgName.split('/');
                     let mes = "general";
                     let fileName = imgName;
 
                     if (pathParts.length > 1) {
-                        mes = pathParts[pathParts.length - 2].toLowerCase(); // El nombre de la carpeta padre
-                        fileName = pathParts[pathParts.length - 1]; // El nombre del archivo real
+                        mes = pathParts[pathParts.length - 2].toLowerCase();
+                        fileName = pathParts[pathParts.length - 1];
                     }
 
                     let baseName = fileName.substring(0, fileName.lastIndexOf('.'));
@@ -226,7 +245,6 @@
                 let mes = "general";
                 let fileName = img.name;
 
-                // Extraer el nombre de la carpeta de subida manual (CarpetaPrincipal/AGOSTO/foto.jpg)
                 if (pathParts.length > 2) {
                     mes = pathParts[pathParts.length - 2].toLowerCase();
                 } else if (pathParts.length === 2) {
@@ -288,7 +306,6 @@
             const filteredFlyers = flyersData.filter(f => {
                 const matchMonth = filterMonth === 'todos' || f.month === filterMonth;
                 const term = searchTerm.toLowerCase();
-                // AQUÍ: Se añade f.script.toLowerCase().includes(term) para buscar en el texto descriptivo
                 const matchSearch = f.title.toLowerCase().includes(term) || 
                                     f.displayName.toLowerCase().includes(term) || 
                                     f.script.toLowerCase().includes(term); 
