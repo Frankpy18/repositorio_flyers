@@ -19,10 +19,16 @@
         .upload-btn { background: var(--dark); color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
         .upload-btn:hover { background: #555; }
 
-        /* NUEVO LAYOUT PRINCIPAL */
+        /* LAYOUT PRINCIPAL */
         .layout-container { max-width: 1300px; margin: 25px auto; padding: 0 20px; display: none; gap: 30px; align-items: flex-start; }
         
-        /* Columna Izquierda (Buscador y Galería) */
+        /* Columna Izquierda (Barra Vertical de Meses) */
+        .sidebar { width: 220px; position: sticky; top: 25px; flex-shrink: 0; }
+        .months-tabs { display: flex; flex-direction: column; gap: 10px; }
+        .btn-month { padding: 12px 18px; background-color: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; text-transform: uppercase; color: #555; width: 100%; text-align: left; }
+        .btn-month.active, .btn-month:hover { background-color: var(--primary); color: white; box-shadow: 0 2px 5px rgba(213, 43, 30, 0.3); padding-left: 25px; }
+
+        /* Columna Derecha (Buscador y Galería) */
         .main-content { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
         
         #searchInput { width: 100%; box-sizing: border-box; padding: 12px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; outline: none; transition: border-color 0.3s; }
@@ -38,12 +44,6 @@
         .tag-month { display: inline-block; font-size: 0.75em; color: var(--primary); text-transform: uppercase; font-weight: bold; background: #ffebeb; padding: 3px 8px; border-radius: 4px; }
 
         .no-results { text-align: center; grid-column: 1 / -1; font-size: 1.1em; color: #777; padding: 40px; }
-
-        /* Columna Derecha (Barra Vertical de Meses) */
-        .sidebar { width: 220px; position: sticky; top: 25px; flex-shrink: 0; }
-        .months-tabs { display: flex; flex-direction: column; gap: 10px; }
-        .btn-month { padding: 12px 18px; background-color: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s; text-transform: uppercase; color: #555; width: 100%; text-align: left; }
-        .btn-month.active, .btn-month:hover { background-color: var(--primary); color: white; box-shadow: 0 2px 5px rgba(213, 43, 30, 0.3); padding-left: 25px; }
 
         /* Responsividad para móviles (vuelve a ser horizontal en pantallas pequeñas) */
         @media (max-width: 850px) {
@@ -95,20 +95,17 @@
 
     <div class="layout-container" id="controlsSection">
         
-        <!-- Columna Izquierda: Buscador y Galería -->
+        <aside class="sidebar">
+            <div class="months-tabs" id="monthsButtons"></div>
+        </aside>
+
         <div class="main-content">
             <input type="text" id="searchInput" placeholder="Buscar por tema, nombre o en el contenido del flyer...">
             <main class="gallery" id="gallery"></main>
         </div>
-
-        <!-- Columna Derecha: Menú de Meses -->
-        <aside class="sidebar">
-            <div class="months-tabs" id="monthsButtons"></div>
-        </aside>
         
     </div>
 
-    <!-- MODAL -->
     <div id="imageModal" class="modal">
         <span class="close-btn" id="closeModal">&times;</span>
         <div class="modal-container">
